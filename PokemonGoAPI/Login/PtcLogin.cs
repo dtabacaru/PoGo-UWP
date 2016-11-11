@@ -11,7 +11,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+#if NETFX_CORE
 using Windows.Foundation;
+#endif
 
 namespace PokemonGo.RocketAPI.Login
 {
@@ -138,7 +140,11 @@ namespace PokemonGo.RocketAPI.Login
             // robertmclaws: No need to even read the string if we have results from the location query.
             if (responseMessage.StatusCode == HttpStatusCode.Found && responseMessage.Headers.Location != null)
             {
+#if NETFX_CORE
                 var decoder = new WwwFormUrlDecoder(responseMessage.Headers.Location.Query);
+#else
+                var decoder = System.Web.HttpUtility.ParseQueryString(responseMessage.Headers.Location.Query);
+#endif
                 if (decoder.Count == 0)
                 {
                     if (Debugger.IsAttached)
@@ -147,7 +153,11 @@ namespace PokemonGo.RocketAPI.Login
                     }
                     throw new LoginFailedException();
                 }
+#if NETFX_CORE
                 return decoder.GetFirstValueByName("ticket");
+#else
+                return decoder["ticket"];
+#endif
             }
 
             var responseContent = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -205,7 +215,11 @@ namespace PokemonGo.RocketAPI.Login
                 throw new Exception("Your login was OK, but we could not get an API Token.");
             }
 
+#if NETFX_CORE
             var decoder = new WwwFormUrlDecoder(responseContent);
+#else
+            var decoder = System.Web.HttpUtility.ParseQueryString(responseContent);
+#endif
             if (decoder.Count == 0)
             {
                 throw new Exception("Your login was OK, but we could not get an API Token.");
@@ -214,9 +228,14 @@ namespace PokemonGo.RocketAPI.Login
             return new AccessToken
             {
                 Username = this.Username,
+#if NETFX_CORE
                 Token = decoder.GetFirstValueByName("access_token"),
                 // @robertmclaws: Subtract 1 hour from the token to solve this issue: https://github.com/pogodevorg/pgoapi/issues/86
                 ExpiresUtc = DateTime.UtcNow.AddSeconds(int.Parse(decoder.GetFirstValueByName("expires")) - 3600),
+#else
+                Token = decoder["access_token"],
+                ExpiresUtc = DateTime.UtcNow.AddSeconds(int.Parse(decoder["expires"]) - 3600),
+#endif
                 AuthType = AuthType.Ptc
             };
         }
