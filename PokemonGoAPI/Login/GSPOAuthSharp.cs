@@ -24,11 +24,7 @@ namespace DankMemes.GPSOAuthSharp
                                                  "RI16kB0YppeGx5qIQ5QjKzsR8ETQbKLNWgRY0QRNVz34kMJR3P/LgHax/" +
                                                  "6rmf5AAAAAwEAAQ==";
 
-#if NETFX_CORE
-        private static readonly RsaParameters _androidKey = GoogleKeyUtils.KeyFromB64(_b64Key);
-#else
         private static readonly RSAParameters _androidKey = GoogleKeyUtils.KeyFromB64(_b64Key);
-#endif
 
         private static readonly string _version = "0.0.5";
         private static readonly string _authUrl = "https://android.clients.google.com/auth";
@@ -138,22 +134,14 @@ namespace DankMemes.GPSOAuthSharp
 
         // key_from_b64
         // BitConverter has different endianness, hence the Reverse()
-#if NETFX_CORE
-        public static RsaParameters KeyFromB64(string b64Key)
-#else
         public static RSAParameters KeyFromB64(string b64Key)
-#endif
         {
             var decoded = Convert.FromBase64String(b64Key);
             var modLength = BitConverter.ToInt32(decoded.Take(4).Reverse().ToArray(), 0);
             var mod = decoded.Skip(4).Take(modLength).ToArray();
             var expLength = BitConverter.ToInt32(decoded.Skip(modLength + 4).Take(4).Reverse().ToArray(), 0);
             var exponent = decoded.Skip(modLength + 8).Take(expLength).ToArray();
-#if NETFX_CORE
-            var rsaKeyInfo = new RsaParameters
-#else
             var rsaKeyInfo = new RSAParameters
-#endif
             {
                 Modulus = mod,
                 Exponent = exponent
@@ -163,15 +151,11 @@ namespace DankMemes.GPSOAuthSharp
 
         // key_to_struct
         // Python version returns a string, but we use byte[] to get the same results
-#if NETFX_CORE
-        public static byte[] KeyToStruct(RsaParameters key)
-#else
         public static byte[] KeyToStruct(RSAParameters key)
-#endif
         {
-            byte[] modLength = {0x00, 0x00, 0x00, 0x80};
+            byte[] modLength = { 0x00, 0x00, 0x00, 0x80 };
             var mod = key.Modulus;
-            byte[] expLength = {0x00, 0x00, 0x00, 0x03};
+            byte[] expLength = { 0x00, 0x00, 0x00, 0x03 };
             var exponent = key.Exponent;
             return DataTypeUtils.CombineBytes(modLength, mod, expLength, exponent);
         }
@@ -180,22 +164,23 @@ namespace DankMemes.GPSOAuthSharp
         public static Dictionary<string, string> ParseAuthResponse(string text)
         {
             var responseData = new Dictionary<string, string>();
-            foreach (var line in text.Split(new[] {"\n", "\r\n"}, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var line in text.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
             {
                 var parts = line.Split('=');
                 responseData.Add(parts[0], parts[1]);
             }
             return responseData;
         }
-#if NETFX_CORE
+
         // signature
-        public static string CreateSignature(string email, string password, RsaParameters key)
+        public static string CreateSignature(string email, string password, RSAParameters key)
         {
+#if NETFX_CORE
             var rsa = AsymmetricKeyAlgorithmProvider.OpenAlgorithm(AsymmetricAlgorithmNames.RsaOaepSha1);
             var keyBlob = CryptographicBuffer.DecodeFromBase64String(_b64KeyBlob);
             var publicKey = rsa.ImportPublicKey(keyBlob, CryptographicPublicKeyBlobType.Capi1PublicKey);
 
-            byte[] prefix = {0x00};
+            byte[] prefix = { 0x00 };
             var hashAlgorithm = HashAlgorithmProvider.OpenAlgorithm(HashAlgorithmNames.Sha1);
             var hash = hashAlgorithm.HashData(KeyToStruct(key).AsBuffer()).ToArray().Take(4).ToArray();
 
@@ -203,10 +188,7 @@ namespace DankMemes.GPSOAuthSharp
                 CryptographicEngine.Encrypt(publicKey, Encoding.UTF8.GetBytes(email + "\x00" + password).AsBuffer(),
                     null).ToArray();
             return DataTypeUtils.UrlSafeBase64(DataTypeUtils.CombineBytes(prefix, hash, encrypted));
-        }
 #else
-        public static string CreateSignature(string email, string password, RSAParameters key)
-        {
             RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
             rsa.ImportParameters(key);
             SHA1 sha1 = SHA1.Create();
@@ -214,15 +196,17 @@ namespace DankMemes.GPSOAuthSharp
             byte[] hash = sha1.ComputeHash(GoogleKeyUtils.KeyToStruct(key)).Take(4).ToArray();
             byte[] encrypted = rsa.Encrypt(Encoding.UTF8.GetBytes(email + "\x00" + password), true);
             return DataTypeUtils.UrlSafeBase64(DataTypeUtils.CombineBytes(prefix, hash, encrypted));
-        }
 #endif
+        }
     }
 
-    internal class RsaParameters
+#if NETFX_CORE
+    internal class RSAParameters
     {
         public byte[] Modulus { get; set; }
         public byte[] Exponent { get; set; }
     }
+#endif
 
     internal class DataTypeUtils
     {
