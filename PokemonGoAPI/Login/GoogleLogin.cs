@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-#if NETFX_CORE
 using Windows.System;
-#endif
 using DankMemes.GPSOAuthSharp;
 using PokemonGo.RocketAPI.Enums;
 using PokemonGo.RocketAPI.Exceptions;
@@ -41,11 +39,7 @@ namespace PokemonGo.RocketAPI.Login
             {
                 if (response.ContainsKey("Url"))
                 {
-#if NETFX_CORE
                     await Launcher.LaunchUriAsync(new Uri(response["Url"]));
-#else
-                    System.Diagnostics.Process.Start(response["Url"]);
-#endif
                 }
                 else
                     throw new GoogleException(response["Error"]);
