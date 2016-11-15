@@ -20,7 +20,7 @@ namespace PokemonGo.RocketAPI.Helpers
         private readonly double _longitude;
         private readonly Random _random = new Random();
         private uint _requestId = 0;
-        private static byte[] _sessionHash = null;
+        private byte[] _sessionHash = null;
 
         public RequestBuilder(string authToken, AuthType authType, double latitude, double longitude, double accuracy,
             IDeviceInfo deviceInfo,

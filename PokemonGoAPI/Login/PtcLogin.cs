@@ -26,9 +26,9 @@ namespace PokemonGo.RocketAPI.Login
 
         #region Private Members
 
-        private static HttpClient HttpClient;
+        private HttpClient HttpClient;
 
-        private static CookieContainer Cookies;
+        private CookieContainer Cookies;
 
         /// <summary>
         /// The Password for the user currently attempting  to authenticate.
@@ -44,8 +44,16 @@ namespace PokemonGo.RocketAPI.Login
 
         #region Constructors
 
-        static PtcLogin()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public PtcLogin(string username, string password)
         {
+            Username = username;
+            Password = password;
+
             Cookies = new CookieContainer();
             HttpClient = new HttpClient(
                 new HttpClientHandler
@@ -56,17 +64,6 @@ namespace PokemonGo.RocketAPI.Login
                 }
             );
             HttpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(Constants.LoginUserAgent);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
-        public PtcLogin(string username, string password)
-        {
-            Username = username;
-            Password = password;
         }
 
         #endregion
